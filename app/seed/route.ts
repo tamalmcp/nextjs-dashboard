@@ -1,9 +1,8 @@
-import bcrypt from 'bcrypt';
 import postgres from 'postgres';
 import { invoices, customers, revenue, users } from '../lib/placeholder-data';
 export const dynamic = 'force-dynamic';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require', prepare: false });
 
 async function seedUsers() {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
@@ -16,9 +15,12 @@ async function seedUsers() {
     );
   `;
 
+  // Pre-hashed bcrypt password for '123456' to avoid native binary dependency issues
+  const defaultHashedPassword = '$2b$10$epRnT383/CsbUU40.SmCYe3ErEE.2dQyTpw8C20.5y2Wv.55wvV2O';
+
   const insertedUsers = await Promise.all(
     users.map(async (user) => {
-      const hashedPassword = await bcrypt.hash(user.password, 10);
+      const hashedPassword = defaultHashedPassword;
       return sql`
         INSERT INTO users (id, name, email, password)
         VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
